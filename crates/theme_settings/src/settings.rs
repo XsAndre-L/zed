@@ -11,7 +11,7 @@ use refineable::Refineable;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 pub use settings::{FontFamilyName, IconThemeName, ThemeAppearanceMode, ThemeName};
-use settings::{IntoGpui, RegisterSetting, Settings, SettingsContent};
+pub use settings::{IntoGpui, RegisterSetting, Settings, SettingsContent};
 use std::sync::Arc;
 use theme::{Appearance, DEFAULT_ICON_THEME_NAME, SyntaxTheme, Theme, UiDensity};
 
@@ -87,6 +87,8 @@ pub struct ThemeSettings {
     pub ui_density: UiDensity,
     /// The amount of fading applied to unnecessary code.
     pub unnecessary_code_fade: f32,
+    /// The scale factor for all UI icons.
+    pub ui_icon_scale: f32,
 }
 
 /// Returns the name of the default theme for the given [`Appearance`].
@@ -711,6 +713,7 @@ impl settings::Settings for ThemeSettings {
             icon_theme: icon_theme_selection,
             ui_density: ui_density_from_settings(content.ui_density.unwrap_or_default()),
             unnecessary_code_fade: content.unnecessary_code_fade.unwrap().0.clamp(0.0, 0.9),
+            ui_icon_scale: content.ui_icon_scale.unwrap_or(1.0),
         }
     }
 }

@@ -1033,7 +1033,7 @@ fn appearance_page() -> SettingsPage {
         ]
     }
 
-    fn ui_font_section() -> [SettingsPageItem; 6] {
+    fn ui_font_section() -> [SettingsPageItem; 7] {
         [
             SettingsPageItem::SectionHeader("UI Font"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1111,6 +1111,20 @@ fn appearance_page() -> SettingsPage {
                     .unimplemented(),
                 ),
                 metadata: None,
+            }),
+            SettingsPageItem::SettingItem(SettingItem {
+                title: "Icon Scale",
+                description: "The scale factor for all UI icons.",
+                field: Box::new(SettingField {
+                    organization_override: None,
+                    json_path: Some("ui_icon_scale"),
+                    pick: |settings_content| settings_content.theme.ui_icon_scale.as_ref(),
+                    write: |settings_content, value, _| {
+                        settings_content.theme.ui_icon_scale = value;
+                    },
+                }),
+                metadata: None,
+                files: USER,
             }),
         ]
     }

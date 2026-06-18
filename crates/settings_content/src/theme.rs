@@ -174,6 +174,10 @@ pub struct ThemeSettingsContent {
     #[schemars(range(min = 0.0, max = 0.9))]
     pub unnecessary_code_fade: Option<CodeFade>,
 
+    /// The scale factor for all UI icons.
+    #[schemars(range(min = 0.1, max = 10.0))]
+    pub ui_icon_scale: Option<f32>,
+
     /// EXPERIMENTAL: Overrides for the current theme.
     ///
     /// These values will override the ones on the current theme specified in `theme`.

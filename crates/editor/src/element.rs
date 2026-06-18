@@ -215,6 +215,29 @@ impl EditorElement {
         self.split_side = Some(side);
     }
 
+    pub(crate) fn is_minimap_visible(&self, cx: &App) -> bool {
+        let editor = self.editor.read(cx);
+        if !editor.supports_minimap(cx) || !editor.minimap_visibility.visible() {
+            return false;
+        }
+
+        let minimap_settings = EditorSettings::get_global(cx).minimap;
+        if minimap_settings.on_active_editor() {
+            let active_editor = editor.workspace().and_then(|ws| {
+                ws.read(cx)
+                    .active_pane()
+                    .read(cx)
+                    .active_item()
+                    .and_then(|i| i.act_as::<Editor>(cx))
+            });
+            if active_editor.is_some_and(|e| e != self.editor) {
+                return false;
+            }
+        }
+
+        true
+    }
+
     fn register_actions(&self, window: &mut Window, cx: &mut App) {
         let editor = &self.editor;
         editor.update(cx, |editor, cx| {
@@ -1300,7 +1323,8 @@ impl EditorElement {
                 horizontal: scrollbar_settings.axes.horizontal
                     && self.editor.read(cx).show_scrollbars.horizontal,
                 vertical: scrollbar_settings.axes.vertical
-                    && self.editor.read(cx).show_scrollbars.vertical,
+                    && self.editor.read(cx).show_scrollbars.vertical
+                    && !self.is_minimap_visible(cx),
             },
             scrollbar_layout_information,
             content_offset,
@@ -6747,6 +6771,7 @@ pub fn render_breadcrumb_text(
             .when(!multibuffer_header, |this| this.overflow_x_scroll())
             .child(
                 ButtonLike::new("toggle outline view")
+                    .size(ButtonSize::Tiny)
                     .child(breadcrumbs)
                     .when(multibuffer_header, |this| {
                         this.style(ButtonStyle::Transparent)
@@ -7939,7 +7964,8 @@ impl Element for EditorElement {
                     let scrollbars_shown = settings.scrollbar.show != ShowScrollbar::Never;
                     let vertical_scrollbar_width = (scrollbars_shown
                         && settings.scrollbar.axes.vertical
-                        && self.editor.read(cx).show_scrollbars.vertical)
+                        && self.editor.read(cx).show_scrollbars.vertical
+                        && !self.is_minimap_visible(cx))
                         .then_some(style.scrollbar_width)
                         .unwrap_or_default();
                     let minimap_width = self

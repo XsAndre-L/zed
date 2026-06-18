@@ -52,7 +52,7 @@ use settings::{
     AllLanguageSettingsContent, DelayMs, EditorSettingsContent, GlobalLspSettingsContent,
     GoToDefinitionScrollStrategy, IndentGuideBackgroundColoring, IndentGuideColoring,
     InlayHintSettingsContent, ProjectSettingsContent, ScrollBeyondLastLine, SearchSettingsContent,
-    SettingsContent, SettingsStore,
+    SettingsContent, SettingsStore, MinimapContent,
 };
 use std::{borrow::Cow, sync::Arc};
 use std::{cell::RefCell, future::Future, rc::Rc, sync::atomic::AtomicBool, time::Instant};
@@ -38513,4 +38513,46 @@ async fn test_select_delimiters_expansion(cx: &mut TestAppContext) {
     cx.assert_editor_state("foo(x, «{ a: 1 }ˇ»);");
     cx.dispatch_action(SelectInsideDelimiters);
     cx.assert_editor_state("foo(«x, { a: 1 }ˇ»);");
+}
+
+#[gpui::test]
+fn test_scrollbar_conditionally_hidden_by_minimap(cx: &mut TestAppContext) {
+    init_test(cx, |_| {});
+    let buffer = cx.new(|cx| language::Buffer::local("one\ntwo\nthree\n", cx));
+    let window = cx.add_window(|window, cx| Editor::for_buffer(buffer, None, window, cx));
+    let editor = window.root(cx).unwrap();
+
+    // Force minimap to be enabled in settings so supports_minimap will be true
+    update_test_editor_settings(cx, &|settings| {
+        settings.minimap = Some(MinimapContent {
+            show: Some(crate::ShowMinimap::Always),
+            ..Default::default()
+        });
+    });
+
+    cx.update(|cx| {
+        let editor_ref = editor.read(cx);
+        assert!(editor_ref.supports_minimap(cx));
+        assert!(editor_ref.minimap_visibility.visible());
+
+        let style = editor.update(cx, |editor, cx| editor.style(cx).clone());
+        let element = crate::EditorElement::new(&editor, style);
+        // Minimap is visible, so is_minimap_visible should be true
+        assert!(element.is_minimap_visible(cx));
+    });
+
+    // Toggle the minimap off
+    let _ = window.update(cx, |editor, window, cx| {
+        editor.toggle_minimap(&crate::ToggleMinimap, window, cx);
+    });
+
+    cx.update(|cx| {
+        let editor_ref = editor.read(cx);
+        assert!(!editor_ref.minimap_visibility.visible());
+
+        let style = editor.update(cx, |editor, cx| editor.style(cx).clone());
+        let element = crate::EditorElement::new(&editor, style);
+        // Minimap is toggled off, so is_minimap_visible should be false
+        assert!(!element.is_minimap_visible(cx));
+    });
 }
