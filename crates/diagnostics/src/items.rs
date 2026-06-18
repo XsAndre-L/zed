@@ -36,7 +36,7 @@ impl Render for DiagnosticIndicator {
         let diagnostic_indicator = match (self.summary.error_count, self.summary.warning_count) {
             (0, 0) => h_flex().child(
                 Icon::new(IconName::Check)
-                    .size(IconSize::Small)
+                    .size(IconSize::Custom(rems_from_px(20.)))
                     .color(Color::Default),
             ),
             (error_count, warning_count) => h_flex()
@@ -44,7 +44,7 @@ impl Render for DiagnosticIndicator {
                 .when(error_count > 0, |this| {
                     this.child(
                         Icon::new(IconName::XCircle)
-                            .size(IconSize::Small)
+                            .size(IconSize::Custom(rems_from_px(20.)))
                             .color(Color::Error),
                     )
                     .child(Label::new(error_count.to_string()).size(LabelSize::Small))
@@ -52,7 +52,7 @@ impl Render for DiagnosticIndicator {
                 .when(warning_count > 0, |this| {
                     this.child(
                         Icon::new(IconName::Warning)
-                            .size(IconSize::Small)
+                            .size(IconSize::Custom(rems_from_px(20.)))
                             .color(Color::Warning),
                     )
                     .child(Label::new(warning_count.to_string()).size(LabelSize::Small))
@@ -92,6 +92,7 @@ impl Render for DiagnosticIndicator {
         indicator
             .child(
                 ButtonLike::new("diagnostic-indicator")
+                    .size(ButtonSize::Medium)
                     .child(diagnostic_indicator)
                     .tooltip(move |_window, cx| {
                         Tooltip::for_action("Project Diagnostics", &Deploy, cx)

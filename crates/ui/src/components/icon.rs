@@ -11,6 +11,8 @@ pub use icons::*;
 
 use crate::traits::transformable::Transformable;
 use crate::{Indicator, prelude::*};
+use theme_settings::ThemeSettings;
+use theme_settings::Settings;
 
 #[derive(IntoElement)]
 pub enum AnyIcon {
@@ -84,7 +86,8 @@ impl IconSize {
     ///   1. The length of one side of the square
     ///   2. The padding of one side of the square
     pub fn square_components(&self, window: &mut Window, cx: &mut App) -> (Pixels, Pixels) {
-        let icon_size = self.rems() * window.rem_size();
+        let scale = ThemeSettings::get_global(cx).ui_icon_scale;
+        let icon_size = self.rems() * window.rem_size() * scale;
         let padding = match self {
             IconSize::Indicator => DynamicSpacing::Base00.px(cx),
             IconSize::XSmall => DynamicSpacing::Base02.px(cx),
@@ -200,10 +203,12 @@ impl Transformable for Icon {
 
 impl RenderOnce for Icon {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let scale = ThemeSettings::get_global(cx).ui_icon_scale;
+        let scaled_size = Rems(self.size.0 * scale);
         match self.source {
             IconSource::Embedded(path) => svg()
                 .with_transformation(self.transformation)
-                .size(self.size)
+                .size(scaled_size)
                 .flex_none()
                 .path(path)
                 .text_color(self.color.color(cx))
@@ -211,12 +216,12 @@ impl RenderOnce for Icon {
             IconSource::ExternalSvg(path) => svg()
                 .external_path(path)
                 .with_transformation(self.transformation)
-                .size(self.size)
+                .size(scaled_size)
                 .flex_none()
                 .text_color(self.color.color(cx))
                 .into_any_element(),
             IconSource::External(path) => img(path)
-                .size(self.size)
+                .size(scaled_size)
                 .flex_none()
                 .text_color(self.color.color(cx))
                 .into_any_element(),

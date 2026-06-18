@@ -68,7 +68,7 @@ pub enum ShellKind {
 
 pub fn get_system_shell() -> String {
     if cfg!(windows) {
-        get_windows_system_shell()
+        get_windows_bash().unwrap_or_else(|| get_windows_system_shell())
     } else {
         std::env::var("SHELL").unwrap_or("/bin/sh".to_string())
     }
@@ -107,9 +107,31 @@ pub fn get_windows_bash() -> Option<String> {
         git_bash.exists().then_some(git_bash)
     }
 
+    fn find_bash_in_standard_paths() -> Option<PathBuf> {
+        let mut paths = Vec::new();
+        if let Some(program_files) = std::env::var_os("ProgramFiles") {
+            let base = PathBuf::from(program_files).join("Git");
+            paths.push(base.join("bin\\bash.exe"));
+            paths.push(base.join("usr\\bin\\bash.exe"));
+        }
+        if let Some(program_files_x86) = std::env::var_os("ProgramFiles(x86)") {
+            paths.push(PathBuf::from(program_files_x86).join("Git\\bin\\bash.exe"));
+        }
+        if let Some(localappdata) = std::env::var_os("LOCALAPPDATA") {
+            paths.push(PathBuf::from(localappdata).join("Programs\\Git\\bin\\bash.exe"));
+        }
+        for path in paths {
+            if path.exists() {
+                return Some(path);
+            }
+        }
+        None
+    }
+
     static BASH: LazyLock<Option<String>> = LazyLock::new(|| {
         let bash = find_bash_in_scoop()
             .or_else(|| find_bash_in_git())
+            .or_else(|| find_bash_in_standard_paths())
             .map(|p| p.to_string_lossy().into_owned());
         if let Some(ref path) = bash {
             log::info!("Found bash at {}", path);

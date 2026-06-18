@@ -221,7 +221,8 @@ impl StatusBar {
                         IconName::ThreadsSidebarLeftClosed
                     },
                 )
-                .icon_size(IconSize::Small)
+                .icon_size(IconSize::Custom(rems_from_px(20.)))
+                .size(ButtonSize::Medium)
                 .when(has_notifications, |this| {
                     this.indicator(Indicator::dot().color(Color::Accent))
                         .indicator_border_color(Some(indicator_border))

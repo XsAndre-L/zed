@@ -11422,7 +11422,7 @@ impl EditorSnapshot {
                 // runnables, breakpoints and bookmarks are shown in the same place
                 // if all three are there only the runnable is shown
                 } else if show_runnables || show_breakpoints || show_bookmarks {
-                    ch_width * 3.0
+                    ch_width * 1.8
                 } else if show_git_gutter && show_line_numbers {
                     ch_width * 2.0
                 } else if show_git_gutter || show_line_numbers {

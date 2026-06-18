@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use gpui::{Hsla, IntoElement, Point, svg};
 use strum::{EnumIter, EnumString, IntoStaticStr};
+use theme_settings::Settings;
 
 use crate::prelude::*;
 
@@ -132,8 +133,9 @@ impl IconDecoration {
 }
 
 impl RenderOnce for IconDecoration {
-    fn render(self, _window: &mut Window, _cx: &mut App) -> impl IntoElement {
-        let size = self.size;
+    fn render(self, _window: &mut Window, cx: &mut App) -> impl IntoElement {
+        let scale = theme_settings::ThemeSettings::get_global(cx).ui_icon_scale;
+        let size = self.size * scale;
 
         let foreground = svg()
             .absolute()

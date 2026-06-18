@@ -1016,7 +1016,7 @@ impl TerminalBuilder {
                 Shell::System => {
                     if cfg!(windows) {
                         Some(ShellParams::new(
-                            util::shell::get_windows_system_shell(),
+                            util::shell::get_system_shell(),
                             None,
                             None,
                         ))

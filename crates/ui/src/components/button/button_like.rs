@@ -5,6 +5,7 @@ use gpui::{
     transparent_black,
 };
 use smallvec::SmallVec;
+use theme_settings::{ThemeSettings, Settings};
 
 use crate::{DynamicSpacing, ElevationIndex, prelude::*};
 
@@ -458,6 +459,7 @@ pub enum ButtonSize {
     #[default]
     Default,
     Compact,
+    Tiny,
     None,
 }
 
@@ -468,6 +470,7 @@ impl ButtonSize {
             ButtonSize::Medium => rems_from_px(28.),
             ButtonSize::Default => rems_from_px(22.),
             ButtonSize::Compact => rems_from_px(18.),
+            ButtonSize::Tiny => rems_from_px(16.),
             ButtonSize::None => rems_from_px(16.),
         }
     }
@@ -666,6 +669,7 @@ impl ParentElement for ButtonLike {
 
 impl RenderOnce for ButtonLike {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+        let scale = ThemeSettings::get_global(cx).ui_icon_scale;
         let style = self
             .selected_style
             .filter(|_| self.selected)
@@ -686,7 +690,7 @@ impl RenderOnce for ButtonLike {
             .font_ui(cx)
             .group("")
             .flex_none()
-            .h(self.height.unwrap_or(self.size.rems().into()))
+            .h(self.height.unwrap_or(Rems(self.size.rems().0 * scale).into()))
             .when_some(self.width, |this, width| {
                 this.w(width).justify_center().text_center()
             })
@@ -697,11 +701,16 @@ impl RenderOnce for ButtonLike {
                     .when(rounding.bottom_right, |this| this.rounded_br_sm())
                     .when(rounding.bottom_left, |this| this.rounded_bl_sm())
             })
-            .gap(DynamicSpacing::Base04.rems(cx))
+            .gap(Rems(DynamicSpacing::Base04.rems(cx).0 * scale))
             .map(|this| match self.size {
-                ButtonSize::Large | ButtonSize::Medium => this.px(DynamicSpacing::Base08.rems(cx)),
+                ButtonSize::Large | ButtonSize::Medium => {
+                    this.px(Rems(DynamicSpacing::Base08.rems(cx).0 * scale))
+                }
                 ButtonSize::Default | ButtonSize::Compact => {
-                    this.px(DynamicSpacing::Base04.rems(cx))
+                    this.px(Rems(DynamicSpacing::Base04.rems(cx).0 * scale))
+                }
+                ButtonSize::Tiny => {
+                    this.px(Rems(DynamicSpacing::Base02.rems(cx).0 * scale))
                 }
                 ButtonSize::None => this.px_px(),
             })
