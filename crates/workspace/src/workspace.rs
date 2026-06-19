@@ -2079,10 +2079,12 @@ impl Workspace {
             // An empty workspace is one where project_paths is empty
             let is_empty_workspace = project_paths.is_empty();
             // Check if serialized workspace has paths before it's moved
-            let serialized_workspace_has_paths = serialized_workspace
+            let _serialized_workspace_has_paths = serialized_workspace
                 .as_ref()
                 .map(|ws| !ws.paths.is_empty())
                 .unwrap_or(false);
+            // Capture before serialized_workspace is moved into open_items below
+            let serialized_workspace_is_none = serialized_workspace.is_none();
 
             let opened_items = window
                 .update(cx, |_, window, cx| {
@@ -2093,11 +2095,13 @@ impl Workspace {
                 .await
                 .unwrap_or_default();
 
-            // Restore default dock state for empty workspaces
+            // Restore default dock state for fresh workspaces only.
             // Only restore if:
-            // 1. This is an empty workspace (no paths), AND
-            // 2. The serialized workspace either doesn't exist or has no paths
-            if is_empty_workspace && !serialized_workspace_has_paths {
+            // 1. This is an empty workspace (no paths to open), AND
+            // 2. There is NO previous session at all (serialized_workspace was None).
+            //    If a session existed but had no paths, load_workspace already ran
+            //    restore_state for the docks — overwriting would discard user preferences.
+            if is_empty_workspace && serialized_workspace_is_none {
                 // Use saved default dock state if available, otherwise fall back to
                 // first-run defaults: left (ProjectPanel), right (GitPanel), bottom
                 // (TerminalPanel) all open.
@@ -9646,7 +9650,7 @@ pub fn join_channel(
                         let detail: SharedString = match err.error_code() {
                             ErrorCode::SignedOut => "Please sign in to continue.".into(),
                             ErrorCode::UpgradeRequired => concat!(
-                                "Your are running an unsupported version of Zed. ",
+                                "Your are running an unsupported version of Xide. ",
                                 "Please update to continue."
                             )
                             .into(),
