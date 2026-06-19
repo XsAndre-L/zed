@@ -1784,7 +1784,7 @@ impl ThreadView {
                 ThreadError::PaymentRequired => (
                     "payment_required",
                     None,
-                    "You reached your free usage limit. Upgrade to Zed Pro for more prompts."
+                    "You reached your free usage limit. Upgrade to Xide Pro for more prompts."
                         .into(),
                 ),
                 ThreadError::Refusal => {
@@ -9962,7 +9962,7 @@ impl ThreadView {
             ThreadError::RateLimitExceeded { provider } => self.render_error_callout(
                 "Rate Limit Reached",
                 format!(
-                    "{provider}'s rate limit was reached. Zed will retry automatically. \
+                    "{provider}'s rate limit was reached. Xide will retry automatically. \
                     You can also wait a moment and try again."
                 )
                 .into(),
@@ -9973,7 +9973,7 @@ impl ThreadView {
             ThreadError::ServerOverloaded { provider } => self.render_error_callout(
                 "Provider Unavailable",
                 format!(
-                    "{provider}'s servers are temporarily unavailable. Zed will retry \
+                    "{provider}'s servers are temporarily unavailable. Xide will retry \
                     automatically. If the problem persists, check the provider's status page."
                 )
                 .into(),
@@ -9993,7 +9993,7 @@ impl ThreadView {
             ThreadError::StreamError { provider } => self.render_error_callout(
                 "Connection Interrupted",
                 format!(
-                    "The connection to {provider}'s API was interrupted. Zed will retry \
+                    "The connection to {provider}'s API was interrupted. Xide will retry \
                     automatically. If the problem persists, check your network connection."
                 )
                 .into(),
@@ -10044,7 +10044,7 @@ impl ThreadView {
                 "API Error",
                 format!(
                     "{provider}'s API returned an unexpected error. \
-                    If the problem persists, try switching models or restarting Zed."
+                    If the problem persists, try switching models or restarting Xide."
                 )
                 .into(),
                 true,
@@ -10095,7 +10095,7 @@ impl ThreadView {
 
     fn render_payment_required_error(&self, cx: &mut Context<Self>) -> Callout {
         const ERROR_MESSAGE: &str =
-            "You reached your free usage limit. Upgrade to Zed Pro for more prompts.";
+            "You reached your free usage limit. Upgrade to Xide Pro for more prompts.";
 
         Callout::new()
             .severity(Severity::Error)

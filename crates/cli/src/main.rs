@@ -44,18 +44,18 @@ trait InstalledApp {
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "zed",
+    name = "xide",
     disable_version_flag = true,
-    before_help = "The Zed CLI binary.
-This CLI is a separate binary that invokes Zed.
+    before_help = "The Xide CLI binary.
+This CLI is a separate binary that invokes Xide.
 
 Examples:
     `zed`
-          Simply opens Zed
+          Simply opens Xide
     `zed --foreground`
           Runs in foreground (shows all logs)
     `zed path-to-your-project`
-          Open your project in Zed
+          Open your project in Xide
     `zed -n path-to-file `
           Open file/folder in a new window",
     after_help = "To read from stdin, append '-', e.g. 'ps axf | zed -'"
@@ -75,7 +75,7 @@ struct Args {
     /// Reuse an existing window, replacing its workspace
     #[arg(short, long, overrides_with_all = ["add", "new", "existing", "classic"], hide = true)]
     reuse: bool,
-    /// Open in existing Zed window
+    /// Open in existing Xide window
     #[arg(short = 'e', long = "existing", overrides_with_all = ["add", "new", "reuse", "classic"])]
     existing: bool,
     /// Use the classic open behavior: new window for directories, reuse for files
@@ -83,32 +83,32 @@ struct Args {
     classic: bool,
     /// Sets a custom directory for all user data (e.g., database, extensions, logs).
     /// This overrides the default platform-specific data directory location:
-    #[cfg_attr(target_os = "macos", doc = "`~/Library/Application Support/Zed`.")]
-    #[cfg_attr(target_os = "windows", doc = "`%LOCALAPPDATA%\\Zed`.")]
+    #[cfg_attr(target_os = "macos", doc = "`~/Library/Application Support/Xide`.")]
+    #[cfg_attr(target_os = "windows", doc = "`%LOCALAPPDATA%\\Xide`.")]
     #[cfg_attr(
         not(any(target_os = "windows", target_os = "macos")),
         doc = "`$XDG_DATA_HOME/zed`."
     )]
     #[arg(long, value_name = "DIR")]
     user_data_dir: Option<String>,
-    /// The paths to open in Zed (space-separated).
+    /// The paths to open in Xide (space-separated).
     ///
     /// Use `path:line:column` syntax to open a file at the given line and column.
     paths_with_position: Vec<String>,
-    /// Print Zed's version and the app path.
+    /// Print Xide's version and the app path.
     #[arg(short, long)]
     version: bool,
     /// Run zed in the foreground (useful for debugging)
     #[arg(long)]
     foreground: bool,
-    /// Custom path to Zed.app or the zed binary
+    /// Custom path to Xide.app or the zed binary
     #[arg(long)]
     zed: Option<PathBuf>,
     /// Run zed in dev-server mode
     #[arg(long)]
     dev_server_token: Option<String>,
     /// The username and WSL distribution to use when opening paths. If not specified,
-    /// Zed will attempt to open the paths directly.
+    /// Xide will attempt to open the paths directly.
     ///
     /// The username is optional, and if not specified, the default user for the distribution
     /// will be used.
@@ -119,7 +119,7 @@ struct Args {
     #[cfg(target_os = "windows")]
     #[arg(long, value_name = "USER@DISTRO")]
     wsl: Option<String>,
-    /// Not supported in Zed CLI, only supported on Zed binary
+    /// Not supported in Xide CLI, only supported on Xide binary
     /// Will attempt to give the correct command to run
     #[arg(long)]
     system_specs: bool,
@@ -133,7 +133,7 @@ struct Args {
     /// When directories are provided, recurses into them and shows all changed files in a single multi-diff view.
     #[arg(long, action = clap::ArgAction::Append, num_args = 2, value_names = ["OLD_PATH", "NEW_PATH"])]
     diff: Vec<String>,
-    /// Uninstall Zed from user system
+    /// Uninstall Xide from user system
     #[cfg(all(
         any(target_os = "linux", target_os = "macos"),
         not(feature = "no-bundled-uninstall")
@@ -142,7 +142,7 @@ struct Args {
     uninstall: bool,
 
     /// Used for SSH/Git password authentication, to remove the need for netcat as a dependency,
-    /// by having Zed act like netcat communicating over a Unix socket.
+    /// by having Xide act like netcat communicating over a Unix socket.
     #[arg(long, hide = true)]
     askpass: Option<String>,
 }
@@ -522,7 +522,7 @@ fn run() -> Result<()> {
     if args.system_specs {
         let path = app.path();
         let msg = [
-            "The `--system-specs` argument is not supported in the Zed CLI, only on Zed binary.",
+            "The `--system-specs` argument is not supported in the Xide CLI, only on Xide binary.",
             "To retrieve the system specs on the command line, run the following command:",
             &format!("{} --system-specs", path.display()),
         ];
@@ -822,7 +822,7 @@ fn prompt_open_behavior() -> Option<cli::CliBehaviorSetting> {
     let blue = console::Style::new().blue();
     let items = [
         format!(
-            "Add to existing Zed window ({})",
+            "Add to existing Xide window ({})",
             blue.apply_to("zed --existing")
         ),
         format!("Open a new window ({})", blue.apply_to("zed --classic")),
@@ -831,7 +831,7 @@ fn prompt_open_behavior() -> Option<cli::CliBehaviorSetting> {
     let prompt = format!(
         "Configure default behavior for {}\n{}",
         blue.apply_to("zed <path>"),
-        console::style("You can change this later in Zed settings"),
+        console::style("You can change this later in Xide settings"),
     );
 
     let selection = dialoguer::Select::new()
@@ -1143,7 +1143,7 @@ mod windows {
     impl InstalledApp for App {
         fn zed_version_string(&self) -> String {
             format!(
-                "Zed {}{}{} – {}",
+                "Xide {}{}{} – {}",
                 if *release_channel::RELEASE_CHANNEL_NAME == "stable" {
                     "".to_string()
                 } else {
@@ -1215,9 +1215,8 @@ mod windows {
                 let cli = std::env::current_exe()?;
                 let dir = cli.parent().context("no parent path for cli")?;
 
-                // ../Zed.exe is the standard, lib/zed is for MSYS2, ./zed.exe is for the target
-                // directory in development builds.
-                let possible_locations = ["../Zed.exe", "../lib/zed/zed-editor.exe", "./zed.exe"];
+                // ../xide.exe is the standard installed layout, ./xide.exe is for development builds.
+                let possible_locations = ["../xide.exe", "../lib/zed/zed-editor.exe", "./xide.exe", "./zed.exe"];
                 possible_locations
                     .iter()
                     .find_map(|p| dir.join(p).canonicalize().ok().filter(|path| path != &cli))
@@ -1316,7 +1315,7 @@ mod mac_os {
 
     impl InstalledApp for Bundle {
         fn zed_version_string(&self) -> String {
-            format!("Zed {} – {}", self.version(), self.path().display(),)
+            format!("Xide {} – {}", self.version(), self.path().display(),)
         }
 
         fn launch(&self, url: String, user_data_dir: Option<&str>) -> anyhow::Result<()> {

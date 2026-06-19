@@ -1,12 +1,12 @@
 [package]
-description = "The fast, collaborative code editor."
+description = "A personal Zed fork with opinionated defaults."
 edition.workspace = true
-name = "zed"
+name = "xide"
 version = "1.8.0"
 publish.workspace = true
 license = "GPL-3.0-or-later"
-authors = ["Zed Team <hi@zed.dev>"]
-default-run = "zed"
+authors = ["XsAndre-L"]
+default-run = "xide"
 
 [lints]
 workspace = true
@@ -54,7 +54,7 @@ visual-tests = [
 ]
 
 [[bin]]
-name = "zed"
+name = "xide"
 path = "src/main.rs"
 
 [[bin]]

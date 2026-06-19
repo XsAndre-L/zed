@@ -1,48 +1,68 @@
-# Zed
+# Xide
 
-[![Zed](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/zed-industries/zed/main/assets/badge/v0.json)](https://zed.dev)
-[![CI](https://github.com/zed-industries/zed/actions/workflows/run_tests.yml/badge.svg)](https://github.com/zed-industries/zed/actions/workflows/run_tests.yml)
-
-Welcome to Zed, a high-performance, multiplayer code editor from the creators of [Atom](https://github.com/atom/atom) and [Tree-sitter](https://github.com/tree-sitter/tree-sitter).
+> A personal fork of [Zed](https://github.com/zed-industries/zed) — the high-performance, multiplayer code editor — with a handful of opinionated adjustments to better suit my own workflow.
 
 ---
 
-### Installation
+## What is Xide?
 
-On macOS, Linux, and Windows you can [download Zed directly](https://zed.dev/download) or install Zed via your local package manager ([macOS](https://zed.dev/docs/installation#macos)/[Linux](https://zed.dev/docs/linux#installing-via-a-package-manager)/[Windows](https://zed.dev/docs/windows#package-managers)).
+Xide is built directly on top of Zed's open-source codebase. Zed itself is a high-performance code editor written in Rust, built by the creators of [Atom](https://github.com/atom/atom) and [Tree-sitter](https://github.com/tree-sitter/tree-sitter). It is fast, keyboard-driven, and designed for serious development work.
 
-Other platforms are not yet available:
+Xide keeps everything that makes Zed great and adds a small number of personal tweaks:
 
-- Web ([tracking discussion](https://github.com/zed-industries/zed/discussions/26195))
+- **Left dock, right dock, and terminal open by default** on first launch
+- **Key-repeat throughput fix on Windows** — restored to Zed v1.7.x levels by removing a per-character synchronous render that had been introduced in a later commit
+- **Xide branding** — logo, app name, and window title
 
-### Developing Zed
+That's it. No grand vision, no diverging roadmap. Just Zed, the way I want it.
 
-- [Building Zed for macOS](./docs/src/development/macos.md)
-- [Building Zed for Linux](./docs/src/development/linux.md)
-- [Building Zed for Windows](./docs/src/development/windows.md)
+---
 
-### Contributing
+## Relationship to Zed
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for ways you can contribute to Zed.
+| | Zed | Xide |
+|---|---|---|
+| Codebase | Original | Fork |
+| License | GPL-3.0 / Apache-2.0 | Same |
+| Target audience | Everyone | Primarily me |
+| Cloud features | Full | Unchanged |
+| Updates | Official releases | Manual merges from upstream |
 
-Also... we're hiring! Check out our [jobs](https://zed.dev/jobs) page for open roles.
+Upstream Zed changes can be merged into Xide at any time. I try to stay close to `main`.
 
-### Licensing
+---
 
-Zed source code is licensed primarily under GPL-3.0-or-later, with Apache-2.0 components where marked.
+## Building
 
-License information for third party dependencies must be correctly provided for CI to pass.
+Xide builds exactly like Zed. Follow the official Zed build docs for your platform:
 
-We use [`cargo-about`](https://github.com/EmbarkStudios/cargo-about) to automatically comply with open source licenses. If CI is failing, check the following:
+- [Building for Windows](./docs/src/development/windows.md)
+- [Building for macOS](./docs/src/development/macos.md)
+- [Building for Linux](./docs/src/development/linux.md)
 
-- Is it showing a `no license specified` error for a crate you've created? If so, add `publish = false` under `[package]` in your crate's Cargo.toml.
-- Is the error `failed to satisfy license requirements` for a dependency? If so, first determine what license the project has and whether this system is sufficient to comply with this license's requirements. If you're unsure, ask a lawyer. Once you've verified that this system is acceptable add the license's SPDX identifier to the `accepted` array in `script/licenses/zed-licenses.toml`.
-- Is `cargo-about` unable to find the license for a dependency? If so, add a clarification field at the end of `script/licenses/zed-licenses.toml`, as specified in the [cargo-about book](https://embarkstudios.github.io/cargo-about/cli/generate/config.html#crate-configuration).
+```bash
+cargo build -p zed --release
+# Binary at: target/release/zed.exe (Windows) or target/release/zed (macOS/Linux)
+```
 
-## Sponsorship
+---
 
-Zed is developed by **Zed Industries, Inc.**, a for-profit company.
+## Using Xide
 
-If you’d like to financially support the project, you can do so via GitHub Sponsors.
-Sponsorships go directly to Zed Industries and are used as general company revenue.
-There are no perks or entitlements associated with sponsorship.
+You are welcome to clone, fork, or use Xide for your own purposes. It is public and carries the same license as upstream Zed (GPL-3.0-or-later, with Apache-2.0 components where marked).
+
+If you want something specific from Zed without Xide's changes, use [Zed directly](https://zed.dev).
+
+---
+
+## Licensing
+
+Source code is licensed under **GPL-3.0-or-later**, with Apache-2.0 components where marked — identical to upstream Zed.
+
+See [LICENSE-GPL](./LICENSE-GPL) and [LICENSE-APACHE](./LICENSE-APACHE).
+
+---
+
+## Credits
+
+All the real work here was done by the [Zed Industries](https://zed.dev) team and the Zed open-source contributors. Xide stands entirely on their shoulders.

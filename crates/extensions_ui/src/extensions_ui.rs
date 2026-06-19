@@ -1260,7 +1260,7 @@ impl ExtensionsPage {
                                     move |_, cx| {
                                         Tooltip::simple(
                                             format!(
-                                                "v{version} is not compatible with this version of Zed.",
+                                                "v{version} is not compatible with this version of Xide.",
                                             ),
                                              cx,
                                         )
@@ -1676,7 +1676,7 @@ impl ExtensionsPage {
                     cx,
                 ),
                 Feature::Git => self.render_feature_upsell_banner(
-                    "Zed comes with basic Git support—more features are coming in the future."
+                    "Xide comes with basic Git support—more features are coming in the future."
                         .into(),
                     "https://zed.dev/docs/git".into(),
                     false,
@@ -1731,7 +1731,7 @@ impl ExtensionsPage {
                     cx,
                 ),
                 Feature::OpenIn => self.render_feature_upsell_banner(
-                    "Zed supports linking to a source line on GitHub and others.".into(),
+                    "Xide supports linking to a source line on GitHub and others.".into(),
                     "https://zed.dev/docs/git#git-integrations".into(),
                     false,
                     cx,
