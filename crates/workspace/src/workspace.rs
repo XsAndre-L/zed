@@ -2098,25 +2098,46 @@ impl Workspace {
             // 1. This is an empty workspace (no paths), AND
             // 2. The serialized workspace either doesn't exist or has no paths
             if is_empty_workspace && !serialized_workspace_has_paths {
-                if let Some(default_docks) = persistence::read_default_dock_state(&kvp) {
-                    window
-                        .update(cx, |_, window, cx| {
-                            workspace.update(cx, |workspace, cx| {
-                                for (dock, serialized_dock) in [
-                                    (&workspace.right_dock, &default_docks.right),
-                                    (&workspace.left_dock, &default_docks.left),
-                                    (&workspace.bottom_dock, &default_docks.bottom),
-                                ] {
-                                    dock.update(cx, |dock, cx| {
-                                        dock.serialized_dock = Some(serialized_dock.clone());
-                                        dock.restore_state(window, cx);
-                                    });
-                                }
-                                cx.notify();
-                            });
-                        })
-                        .log_err();
-                }
+                // Use saved default dock state if available, otherwise fall back to
+                // first-run defaults: left (ProjectPanel), right (GitPanel), bottom
+                // (TerminalPanel) all open.
+                let default_docks =
+                    persistence::read_default_dock_state(&kvp).unwrap_or_else(|| {
+                        persistence::model::DockStructure {
+                            left: persistence::model::DockData {
+                                visible: true,
+                                active_panel: Some("ProjectPanel".to_string()),
+                                zoom: false,
+                            },
+                            right: persistence::model::DockData {
+                                visible: true,
+                                active_panel: Some("GitPanel".to_string()),
+                                zoom: false,
+                            },
+                            bottom: persistence::model::DockData {
+                                visible: true,
+                                active_panel: Some("TerminalPanel".to_string()),
+                                zoom: false,
+                            },
+                        }
+                    });
+                window
+                    .update(cx, |_, window, cx| {
+                        workspace.update(cx, |workspace, cx| {
+                            for (dock, serialized_dock) in [
+                                (&workspace.right_dock, &default_docks.right),
+                                (&workspace.left_dock, &default_docks.left),
+                                (&workspace.bottom_dock, &default_docks.bottom),
+                            ] {
+                                dock.update(cx, |dock, cx| {
+                                    dock.serialized_dock = Some(serialized_dock.clone());
+                                    dock.restore_state(window, cx);
+                                });
+                            }
+                            cx.notify();
+                        });
+                    })
+                    .log_err();
             }
 
             window

@@ -438,10 +438,15 @@ impl Platform for WindowsPlatform {
             self.begin_vsync_thread();
         }
 
-        // Time-gate: force `UpdateWindow` if this much time has elapsed since
-        // the last render, even when chars are still pending.  This guarantees
-        // at least ~60 fps output during key-hold so characters appear
-        // continuously rather than batching until key-up.
+        // Escape-hatch render: call `UpdateWindow` only when we haven't
+        // rendered for a full vsync interval.  This unblocks WM_PAINT
+        // when the WM_GPUI_TASK flood would otherwise starve it, while
+        // NOT rendering on every WM_CHAR (which would cost a full
+        // layout + DirectX draw per keystroke and cap key-repeat
+        // throughput to ~13 chars/sec).
+        //
+        // The vsync thread's RedrawWindow handles normal per-frame
+        // rendering.  UpdateWindow here is only an emergency fallback.
         const RENDER_DEADLINE: std::time::Duration = std::time::Duration::from_millis(16);
         let mut last_update = std::time::Instant::now();
 
@@ -452,12 +457,9 @@ impl Platform for WindowsPlatform {
                     _ = TranslateMessage(&msg);
                     DispatchMessageW(&msg);
                 }
-                if !msg.hwnd.is_invalid() {
-                    let overdue = last_update.elapsed() >= RENDER_DEADLINE;
-                    if overdue || !is_char_pending(msg.hwnd) {
-                        let _ = UpdateWindow(msg.hwnd);
-                        last_update = std::time::Instant::now();
-                    }
+                if !msg.hwnd.is_invalid() && last_update.elapsed() >= RENDER_DEADLINE {
+                    let _ = UpdateWindow(msg.hwnd);
+                    last_update = std::time::Instant::now();
                 }
             }
         }
@@ -983,61 +985,73 @@ impl WindowsPlatformInner {
             'timeout_loop: loop {
                 if start.elapsed().as_millis() >= MAIN_TASK_TIMEOUT {
                     log::debug!("foreground task timeout reached");
-                    // We spent our 10 ms budget on GPUI tasks.  Drain pending system
-                    // events to stay responsive, then yield so the main loop can
-                    // process other messages (e.g. WM_GPUI_CLOSE_ONE_WINDOW).
+
+                    // Flush one pending WM_PAINT before yielding so the most recent
+                    // GPUI state reaches the screen before we go back into the task
+                    // loop.  Win32 prioritises posted messages (including our own
+                    // WM_GPUI_TASK) over WM_PAINT, so without this peek the
+                    // vsync-generated WM_PAINT would never fire during heavy load.
+                    //
+                    // DELIBERATELY no PM_QS_INPUT drain here.  Processing WM_CHAR
+                    // inside the timeout handler queues additional foreground tasks
+                    // (~30 ms each) while the current backlog is still growing.
+                    // That causes a cascading backlog: each drained character adds
+                    // more work than we can clear in one 10 ms cycle, so effective
+                    // throughput falls to ~13 chars/sec vs the OS key-repeat rate of
+                    // ~30 chars/sec.  Win32 delivers WM_KEYDOWN and WM_CHAR with
+                    // higher priority than posted WM_USER messages, so GetMessageW
+                    // in the outer loop handles interleaving correctly without any
+                    // explicit drain here.
                     let mut msg = MSG::default();
-                    let process_message = |msg: &_| {
-                        if translate_accelerator(msg).is_none() {
-                            _ = unsafe { TranslateMessage(msg) };
-                            unsafe { DispatchMessageW(msg) };
+                    if unsafe {
+                        PeekMessageW(&mut msg, None, 0, 0, PM_REMOVE | PM_QS_PAINT).as_bool()
+                    } {
+                        if translate_accelerator(&msg).is_none() {
+                            _ = unsafe { TranslateMessage(&msg) };
+                            unsafe { DispatchMessageW(&msg) };
                         }
                         unsafe {
                             if !msg.hwnd.is_invalid() && !is_char_pending(msg.hwnd) {
                                 let _ = UpdateWindow(msg.hwnd);
                             }
                         }
-                    };
-                    let peek_msg = |msg: &mut _, msg_kind| unsafe {
-                        PeekMessageW(msg, None, 0, 0, PM_REMOVE | msg_kind).as_bool()
-                    };
-                    // Process one paint first: without this we would re-enter
-                    // run_foreground_task before any WM_PAINT is delivered because
-                    // Windows prioritises custom posted messages over WM_PAINT.
-                    if peek_msg(&mut msg, PM_QS_PAINT) {
-                        process_message(&msg);
                     }
-                    // Drain at most this many input messages per cycle so renders
-                    // can interleave with key-repeat input instead of all characters
-                    // batching up until key-release.
-                    const MAX_INPUT_PER_CYCLE: usize = 8;
-                    let mut input_count = 0usize;
-                    while input_count < MAX_INPUT_PER_CYCLE && peek_msg(&mut msg, PM_QS_INPUT) {
-                        process_message(&msg);
-                        input_count += 1;
+
+                    // Conditional re-post — TOCTOU-safe ordering:
+                    //
+                    // 1. store(false, Release) FIRST: any background thread calling
+                    //    dispatch_on_main_thread after this point will observe
+                    //    wake_posted=false, post its own WM_GPUI_TASK, and self-
+                    //    announce.  It will not rely on us to post for it.
+                    //
+                    // 2. is_empty() SECOND (under the queue mutex): items enqueued
+                    //    *before* our store are still in the queue and will be seen
+                    //    as non-empty here.  We must post for them because they saw
+                    //    wake_posted=true and skipped their own PostMessageW.
+                    //
+                    // 3. If we post: restore wake_posted=true so the gate is armed.
+                    //
+                    // Double-posts (a sender posts AND we post) are harmless — one
+                    // extra empty run_foreground_task trip.  No runnable is lost.
+                    self.dispatcher.wake_posted.store(false, Ordering::Release);
+                    if !self.main_receiver.is_empty() {
+                        self.dispatcher.wake_posted.store(true, Ordering::Release);
+                        unsafe {
+                            if let Err(_) = PostMessageW(
+                                Some(self.dispatcher.platform_window_handle.as_raw()),
+                                WM_GPUI_TASK_DISPATCHED_ON_MAIN_THREAD,
+                                WPARAM(self.validation_number),
+                                LPARAM(0),
+                            ) {
+                                // PostMessageW failed (window destroyed / queue full).
+                                // Clear the flag so the next dispatch_on_main_thread
+                                // can retry.
+                                self.dispatcher.wake_posted.store(false, Ordering::Release);
+                            }
+                        }
                     }
-                    // After the capped drain, flush one more paint so characters
-                    // that were just inserted appear on screen before we start
-                    // another round of GPUI task processing.
-                    if peek_msg(&mut msg, PM_QS_PAINT) {
-                        process_message(&msg);
-                    }
-                    // Allow the main loop to process other gpui events before going
-                    // back into run_foreground_task.  The unconditional re-post is
-                    // necessary to cover the TOCTOU window: tasks dispatched while
-                    // wake_posted was still `true` (and therefore did not call
-                    // PostMessageW themselves) would otherwise be silently lost until
-                    // the next dispatch_on_main_thread call.
-                    unsafe {
-                        if let Err(_) = PostMessageW(
-                            Some(self.dispatcher.platform_window_handle.as_raw()),
-                            WM_GPUI_TASK_DISPATCHED_ON_MAIN_THREAD,
-                            WPARAM(self.validation_number),
-                            LPARAM(0),
-                        ) {
-                            self.dispatcher.wake_posted.store(false, Ordering::Release);
-                        };
-                    }
+                    // If the queue is empty: wake_posted stays false.  The next
+                    // dispatch_on_main_thread call will see false and post fresh.
                     break 'tasks;
                 }
                 let mut main_receiver = self.main_receiver.clone();
